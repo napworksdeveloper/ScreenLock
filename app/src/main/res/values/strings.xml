@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Screen lock</string>
+    <string name="ok">Ok</string>
+    <string name="setKeyboard">Screen Lock</string>
+    <string name="setKeyboardMessage">Please allow App Usage for Screen lock.</string>
+    <string name="name">Name</string>
+    <string name="setDefaultKeyboardMessage">"<u>Click here</u> to select Parentyn keyboard in settings"</string>
+</resources>
