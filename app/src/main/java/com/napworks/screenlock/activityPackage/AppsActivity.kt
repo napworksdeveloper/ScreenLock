@@ -21,10 +21,12 @@ import com.napworks.screenlock.utilPackage.CommonMethods
 import android.app.AppOpsManager
 import android.content.Context
 import android.os.Process
+import android.util.Log
 import com.napworks.screenlock.databasePackage.DataBaseMethods
 import com.napworks.screenlock.dialogPackage.AppUsageConfirmationDialog
 import com.napworks.screenlock.interfacePackage.ConfirmationInterface
 import com.napworks.screenlock.utilPackage.BackgroundServices
+import com.napworks.screenlock.utilPackage.LoadingDialog
 
 
 class AppsActivity : AppCompatActivity() , AppLockInterface, ConfirmationInterface {
@@ -36,22 +38,29 @@ class AppsActivity : AppCompatActivity() , AppLockInterface, ConfirmationInterfa
     var appDetailsList: ArrayList<AppDetailsModel>? = null
     private var sharedPreferences: SharedPreferences? = null
     var appUsageConfirmationDialog: AppUsageConfirmationDialog? = null
-
+    var loadingDialog: LoadingDialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        loadingDialog = LoadingDialog(this)
         appDetailsList = ArrayList<AppDetailsModel>()
         recyclerView = findViewById<View>(R.id.recycler_view) as RecyclerView
         sharedPreferences = this!!.getSharedPreferences(MyConstants.SHARED_PREFERENCE, AppCompatActivity.MODE_PRIVATE)
+        startService(Intent(this, BackgroundServices::class.java))
+        if(DataBaseMethods(this).packageName.size <= 0)
+        {
+            DataBaseMethods(this).insertPackage(apkDataExtractor())
+        }
+        appDetailsList!!.addAll(DataBaseMethods(this).packageName)
+
         recyclerViewLayoutManager = GridLayoutManager(this@AppsActivity, 1)
         recyclerView!!.layoutManager = recyclerViewLayoutManager
-//        adapter = AppsAdapter(this, apkDataExtractor(), this)
+        adapter = AppsAdapter(this, appDetailsList, this)
         recyclerView!!.adapter = adapter
-        setList(MyConstants.APP_LIST,appDetailsList)
+
+
         appUsageConfirmationDialog = AppUsageConfirmationDialog(this, this)
         requestPremissions(this)
-        DataBaseMethods(this).insertPackage(apkDataExtractor())
-
     }
 
     override fun onResume()
@@ -110,9 +119,7 @@ class AppsActivity : AppCompatActivity() , AppLockInterface, ConfirmationInterfa
         {
             var packageName = appInfo.packageName
             appDetailsList!!.add(AppDetailsModel(0,packageName,0))
-
         }
-
         return appDetailsList
     }
 
@@ -121,30 +128,32 @@ class AppsActivity : AppCompatActivity() , AppLockInterface, ConfirmationInterfa
     override fun onAppLockClick(status: String?, appDetailsModel: AppDetailsModel, position: Int)
     {
         CommonMethods.showLog(TAG,"position   => " + position)
+        CommonMethods.showLog(TAG,"position  id => " + appDetailsModel.id)
         if(appDetailsList!![position].isSelect == 1)
         {
             appDetailsList!![position].isSelect = 0
+            DataBaseMethods(this).updateChannelText(0,appDetailsModel.packageName)
         }
         else
         {
-            appDetailsModel.isSelect = 1
+            appDetailsList!![position].isSelect = 1
+            DataBaseMethods(this).updateChannelText(1,appDetailsModel.packageName)
         }
 
         adapter!!.notifyDataSetChanged()
-        setList(MyConstants.APP_LIST,appDetailsList)
     }
 
-    fun <AppDetailsModel> setList(key: String?, list: List<AppDetailsModel>?) {
-        val gson = Gson()
-        val json: String = gson.toJson(list)
-        set(key, json)
-    }
+//    fun <AppDetailsModel> setList(key: String?, list: List<AppDetailsModel>?) {
+//        val gson = Gson()
+//        val json: String = gson.toJson(list)
+//        set(key, json)
+//    }
 
-    operator fun set(key: String?, value: String?) {
-        val editor = sharedPreferences!!.edit()
-        editor.putString(key, value)
-        editor.apply()
-    }
+//    operator fun set(key: String?, value: String?) {
+//        val editor = sharedPreferences!!.edit()
+//        editor.putString(key, value)
+//        editor.apply()
+//    }
 
     override fun confirmationResponse(id: String?, confirmationValue: String?, context: Context)
     {

@@ -7,7 +7,6 @@ import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -17,11 +16,16 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.napworks.mohra.utilPackage.MyConstants;
+import com.napworks.screenlock.databasePackage.DataBaseMethods;
 import com.napworks.screenlock.modelPackage.AppDetailsModel;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.SortedMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,6 +38,8 @@ public class BackgroundServices extends Service {
     public static Runnable runnable = null;
     String packageName = "";
     String TAG = "BackgroundServices";
+
+    ArrayList<AppDetailsModel> appDetailsList = null;
     public SharedPreferences sharedPreferences = null;
     List<AppDetailsModel> lockedAppName = null;
 
@@ -46,20 +52,28 @@ public class BackgroundServices extends Service {
     public void onCreate() {
         Log.e(TAG," OnCreate BackgroundServices");
         sharedPreferences = context.getSharedPreferences(MyConstants.SHARED_PREFERENCE, Context.MODE_PRIVATE);
-        Toast.makeText(this, "Service created!", Toast.LENGTH_LONG).show();
-        ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
-        scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask()
+        {
+            @Override
             public void run() {
-//               Log.e(TAG,"Service is still running");
-                 String currentPackageName = retriveNewApp();
+                Log.e(TAG, "  running  ");
+                String currentPackageName = retriveNewApp();
                 for(int l=0; l<getList().size(); l++) {
-                    if (getList().get(l).isSelect()) {
-//                        Log.e(TAG,"Selected  = >  " + getList().get(l).getPackageName());
-//                        Log.e(TAG,"Selected   =>  " + getList().get(l).getPackageName()  + " Current  => " + currentPackageName);
+                    if (getList().get(l).isSelect() == 1) {
+                        Log.e(TAG,"Selected   =>  " + getList().get(l).getPackageName()  + " Current  => " + currentPackageName);
                         if (getList().get(l).getPackageName().equalsIgnoreCase(currentPackageName)) {
-                            Intent intent = new Intent(currentPackageName);
+                            Log.e(TAG, "  open lock  ");
+//
+//                            Intent intent = new Intent(currentPackageName);
+//                            intent.setClassName("com.napworks.screenlock", "com.napworks.screenlock.activityPackage.LockScreenActivity");
+//                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                            startActivity(intent);
+
+
+                            Intent intent = new Intent(Intent.ACTION_MAIN);
                             intent.setClassName("com.napworks.screenlock", "com.napworks.screenlock.activityPackage.LockScreenActivity");
-//                            intent.setFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);
                         }
@@ -70,7 +84,60 @@ public class BackgroundServices extends Service {
                     }
                 }
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 0, 1000);
+
+
+
+//        Handler handler = new Handler();
+//        Runnable r=new Runnable() {
+//            public void run() {
+//                Log.e(TAG,"Service running");
+//                String currentPackageName = retriveNewApp();
+//                for(int l=0; l<getList().size(); l++) {
+//                    if (getList().get(l).isSelect() == 1) {
+//                        Log.e(TAG,"Selected   =>  " + getList().get(l).getPackageName()  + " Current  => " + currentPackageName);
+//                        if (getList().get(l).getPackageName().equalsIgnoreCase(currentPackageName)) {
+//                            Intent intent = new Intent(currentPackageName);
+//                            intent.setClassName("com.napworks.screenlock", "com.napworks.screenlock.activityPackage.LockScreenActivity");
+////                            intent.setFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                            startActivity(intent);
+//                        }
+//                    }
+//                    else
+//                    {
+//
+//                    }
+//                }
+//                handler.postDelayed(this, 1500);
+//            }
+//        };
+//        handler.postDelayed(r, 1500);
+
+
+//        ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+//        scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+//            public void run() {
+//               Log.e(TAG,"Service is still running");
+//                 String currentPackageName = retriveNewApp();
+//                for(int l=0; l<getList().size(); l++) {
+//                    if (getList().get(l).isSelect() == 1) {
+//                        Log.e(TAG,"Selected   =>  " + getList().get(l).getPackageName()  + " Current  => " + currentPackageName);
+//                        if (getList().get(l).getPackageName().equalsIgnoreCase(currentPackageName)) {
+//                            Intent intent = new Intent(currentPackageName);
+//                            intent.setClassName("com.napworks.screenlock", "com.napworks.screenlock.activityPackage.LockScreenActivity");
+////                            intent.setFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                            startActivity(intent);
+//                        }
+//                    }
+//                    else
+//                    {
+//
+//                    }
+//                }
+//            }
+//        }, 0, 1, TimeUnit.MILLISECONDS);
 
 //        handler = new Handler();
 //        runnable = new Runnable() {
@@ -103,19 +170,20 @@ public class BackgroundServices extends Service {
 
     public List<AppDetailsModel> getList()
     {
-        List<AppDetailsModel> arrayItems = null;
-        String serializedObject = sharedPreferences.getString(MyConstants.APP_LIST, null);
+        List<AppDetailsModel> arrayItems = new DataBaseMethods(context).getPackageName();
+//        String serializedObject = sharedPreferences.getString(MyConstants.APP_LIST, null);
 
-        if (serializedObject != null) {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<AppDetailsModel>>() {
-            }.getType();
-            arrayItems = gson.fromJson(serializedObject, type);
-        }
+//        if (serializedObject != null) {
+//            Gson gson = new Gson();
+//            Type type = new TypeToken<List<AppDetailsModel>>() {
+//            }.getType();
+//            arrayItems = gson.fromJson(serializedObject, type);
+//        }
         return arrayItems;
     }
 
-    private String retriveNewApp() {
+    private String retriveNewApp()
+    {
         if (Build.VERSION.SDK_INT >= 21)
         {
             String currentApp = null;
@@ -145,6 +213,7 @@ public class BackgroundServices extends Service {
     @Override
     public void onDestroy()
     {
+
         Toast.makeText(this, "Service stopped", Toast.LENGTH_LONG).show();
     }
 

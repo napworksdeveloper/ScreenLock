@@ -1,8 +1,5 @@
 package com.napworks.screenlock.adapterPackage;
 
-/**
- * Created by Juned on 4/14/2017.
- */
 
 import android.content.Context;
 import android.content.Intent;
@@ -94,7 +91,7 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.ViewHolder>{
         viewHolder.textView_App_Package_Name.setText(ApplicationPackageName);
         viewHolder.imageView.setImageDrawable(drawable);
 
-        if(appList.get(position).isSelect())
+        if(appList.get(position).isSelect() == 1)
         {
             viewHolder.lockImage.setColorFilter(context1.getColor(R.color.purple_700));
         }

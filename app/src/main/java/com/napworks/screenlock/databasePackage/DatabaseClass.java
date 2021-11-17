@@ -34,9 +34,12 @@ public class DatabaseClass extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
-        try {
+        try
+        {
             sqLiteDatabase.execSQL(CREATE_CALL_LOG_TABLE);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Log.e(TAG, "tableCreate " + e.getMessage());
         }
     }
